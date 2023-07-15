@@ -1,3 +1,4 @@
+#include <cctype>
 #include <sstream>
 #include <stdexcept>
 
@@ -252,11 +253,16 @@ void Lexer::parse_identifier() {
   }
 
   std::string text = this->source.substr(this->start, this->current - this->start);
+  std::string text_lower;
+
+  for (char c : text) {
+    text_lower += tolower(c);
+  }
 
   try {
-    this->add_token(Lexer::keywords.at(text));
+    this->add_token(Lexer::keywords.at(text_lower));
   } catch (const std::out_of_range& e) {
     // did not find any keyword match, log this as an identifier
-    this->add_token(TokenType::IDENTIFIER, text);
+    this->add_token(TokenType::IDENTIFIER, text_lower);
   }
 }
