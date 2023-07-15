@@ -1,6 +1,75 @@
-#include "lexer.h"
+#include <sstream>
+#include <stdexcept>
 
+#include "lexer.h"
 #include "rockstar.h"
+
+Lexer::KeywordMap Lexer::keywords = {
+  std::make_pair("a", TokenType::A),
+  std::make_pair("an", TokenType::AN),
+  std::make_pair("the", TokenType::THE),
+  std::make_pair("my", TokenType::MY),
+  std::make_pair("your", TokenType::YOUR),
+  std::make_pair("our", TokenType::OUR),
+  std::make_pair("it", TokenType::IT),
+  std::make_pair("he", TokenType::HE),
+  std::make_pair("she", TokenType::SHE),
+  std::make_pair("him", TokenType::HIM),
+  std::make_pair("her", TokenType::HER),
+  std::make_pair("they", TokenType::THEY),
+  std::make_pair("them", TokenType::THEM),
+  std::make_pair("ze", TokenType::ZE),
+  std::make_pair("hir", TokenType::HIR),
+  std::make_pair("zie", TokenType::ZIE),
+  std::make_pair("zir", TokenType::ZIR),
+  std::make_pair("xe", TokenType::XE),
+  std::make_pair("xem", TokenType::XEM),
+  std::make_pair("ve", TokenType::VE),
+  std::make_pair("ver", TokenType::VER),
+  std::make_pair("put", TokenType::PUT),
+  std::make_pair("into", TokenType::INTO),
+  std::make_pair("of", TokenType::OF),
+  std::make_pair("in", TokenType::IN),
+  std::make_pair("is", TokenType::IS),
+  std::make_pair("isnt", TokenType::ISNT),
+  std::make_pair("let", TokenType::LET),
+  std::make_pair("be", TokenType::BE),
+  std::make_pair("at", TokenType::AT),
+  std::make_pair("rock", TokenType::ROCK),
+  std::make_pair("roll", TokenType::ROLL),
+  std::make_pair("with", TokenType::WITH),
+  std::make_pair("without", TokenType::WITHOUT),
+  std::make_pair("like", TokenType::LIKE),
+  std::make_pair("cut", TokenType::CUT),
+  std::make_pair("join", TokenType::JOIN),
+  std::make_pair("build", TokenType::BUILD),
+  std::make_pair("knock", TokenType::KNOCK),
+  std::make_pair("turn", TokenType::TURN),
+  std::make_pair("up", TokenType::UP),
+  std::make_pair("down", TokenType::DOWN),
+  std::make_pair("around", TokenType::AROUND),
+  std::make_pair("say", TokenType::SAY),
+  std::make_pair("listen", TokenType::LISTEN),
+  std::make_pair("and", TokenType::AND),
+  std::make_pair("or", TokenType::OR),
+  std::make_pair("nor", TokenType::NOR),
+  std::make_pair("not", TokenType::NOT),
+  std::make_pair("as", TokenType::AS),
+  std::make_pair("high", TokenType::HIGH),
+  std::make_pair("low", TokenType::LOW),
+  std::make_pair("if", TokenType::IF),
+  std::make_pair("else", TokenType::ELSE),
+  std::make_pair("while", TokenType::WHILE),
+  std::make_pair("break", TokenType::BREAK),
+  std::make_pair("continue", TokenType::CONTINUE),
+  std::make_pair("takes", TokenType::TAKES),
+  std::make_pair("taking", TokenType::TAKING),
+  std::make_pair("return", TokenType::RETURN),
+  std::make_pair("null", TokenType::NULL_TOKEN),
+  std::make_pair("true", TokenType::TRUE),
+  std::make_pair("false", TokenType::FALSE),
+  std::make_pair("empty", TokenType::EMPTY),
+};
 
 Lexer::Lexer(std::string source)
 : start(0)
@@ -63,10 +132,12 @@ void Lexer::scan_token() {
 
   switch(c) {
     case ' ':
-    case '\r':
     case '\t':
-    case '\n':
+    case '\r':
       // ignore whitespace
+      break;
+    case '\n':
+      this->parse_newline();
       break;
     case '.': this->add_token(TokenType::DOT); break;
     case '+': this->add_token(TokenType::PLUS); break;
@@ -81,7 +152,10 @@ void Lexer::scan_token() {
       } else if (this->is_alpha(c)) {
         this->parse_identifier();
       } else {
-        Rockstar::error(curr_loc, "Unexpected character.");
+        std::stringstream msg;
+        msg << "Unexpected character '" << c << "'.";
+
+        Rockstar::error(curr_loc, msg.str());
       }
       break;
   }
@@ -95,8 +169,21 @@ void Lexer::add_token(TokenType type, TokenData data) {
   );
 }
 
+void Lexer::parse_newline() {
+  if (this->peek() != '\n' && this->peek(1) != '\r' && this->peek(2) != '\n') {
+    return;
+  }
+
+  // capture newlines
+  this->advance();
+  this->advance();
+  this->advance();
+
+  this->add_token(TokenType::EMPTY_LINE);
+}
+
 void Lexer::parse_comment() {
-  while (peek() != ')' && !this->is_at_end()) {
+  while (this->peek() != ')' && !this->is_at_end()) {
     this->advance();
   }
 
@@ -116,7 +203,7 @@ void Lexer::parse_comment() {
 }
 
 void Lexer::parse_string() {
-  while (peek() != '"' && !this->is_at_end()) {
+  while (this->peek() != '"' && !this->is_at_end()) {
     this->advance();
   }
 
@@ -164,6 +251,12 @@ void Lexer::parse_identifier() {
     this->advance();
   }
 
-  std::string token_data = this->source.substr(this->start, this->current - this->start);
-  this->add_token(TokenType::IDENTIFIER, token_data);
+  std::string text = this->source.substr(this->start, this->current - this->start);
+
+  try {
+    this->add_token(Lexer::keywords.at(text));
+  } catch (const std::out_of_range& e) {
+    // did not find any keyword match, log this as an identifier
+    this->add_token(TokenType::IDENTIFIER, text);
+  }
 }

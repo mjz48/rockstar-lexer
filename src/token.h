@@ -29,7 +29,7 @@ inline std::ostream& operator<<(std::ostream& str, const TokenData& tt) {
 
 enum class TokenType {
   // single character tokens
-  DOT, PLUS, MINUS, STAR, SLASH, COMMA,
+  DOT, PLUS, MINUS, STAR, SLASH, COMMA, EMPTY_LINE,
 
   // literals
   COMMENT, IDENTIFIER, STRING, NUMBER,

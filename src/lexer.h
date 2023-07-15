@@ -2,6 +2,7 @@
 #define __LEXER_H__
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -26,12 +27,16 @@ class Lexer {
     void scan_token();
     void add_token(TokenType type, TokenData data = std::monostate{});
 
+    void parse_newline();
     void parse_comment();
     void parse_string();
     void parse_number();
     void parse_identifier();
 
   private:
+    using KeywordMap = std::map<std::string, TokenType>;
+    static KeywordMap keywords;
+
     int start;
     int current;
     std::string source;
