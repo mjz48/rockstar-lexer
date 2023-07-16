@@ -29,6 +29,7 @@ Lexer::AliasMap Lexer::keyword_aliases = {
   std::make_pair("burn", "cast"),
   // leave out [with -> +] and [without => -] aliases because those
   // overlap with context sensitive keywords
+  std::make_pair("n", "and"),
   std::make_pair("are", "is"),
   std::make_pair("was", "is"),
   std::make_pair("were", "is"),
