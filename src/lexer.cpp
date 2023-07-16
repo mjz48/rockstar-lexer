@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <sstream>
 #include <stdexcept>
@@ -17,9 +18,9 @@ Lexer::AliasMap Lexer::keyword_aliases = {
   std::make_pair("wrong", "false"),
   std::make_pair("no", "false"),
   std::make_pair("lies", "false"),
-  std::make_pair("empty", ""),
-  std::make_pair("silent", ""),
-  std::make_pair("silence", ""),
+  std::make_pair("empty", ""), // this might not belong here?
+  std::make_pair("silent", ""), // this might not belong here?
+  std::make_pair("silence", ""), // this might not belong here?
   std::make_pair("push", "rock"),
   std::make_pair("pop", "roll"),
   std::make_pair("split", "cut"),
@@ -31,6 +32,10 @@ Lexer::AliasMap Lexer::keyword_aliases = {
   std::make_pair("are", "is"),
   std::make_pair("was", "is"),
   std::make_pair("were", "is"),
+  std::make_pair("aint", "isnt"),
+  std::make_pair("arent", "isnt"),
+  std::make_pair("wasnt", "isnt"),
+  std::make_pair("werent", "isnt"),
 };
 
 Lexer::KeywordMap Lexer::keywords = {
@@ -86,7 +91,10 @@ Lexer::KeywordMap Lexer::keywords = {
   std::make_pair("not", TokenType::NOT),
   std::make_pair("as", TokenType::AS),
   std::make_pair("high", TokenType::HIGH),
+  std::make_pair("higher", TokenType::HIGHER),
   std::make_pair("low", TokenType::LOW),
+  std::make_pair("lower", TokenType::LOWER),
+  std::make_pair("than", TokenType::THAN),
   std::make_pair("if", TokenType::IF),
   std::make_pair("else", TokenType::ELSE),
   std::make_pair("while", TokenType::WHILE),
@@ -157,6 +165,30 @@ bool Lexer::is_alpha(char c) {
 
 bool Lexer::is_alphanumeric(char c) {
   return this->is_digit(c) || this->is_alpha(c);
+}
+
+bool Lexer::is_keyword(std::string keyword) {
+  try {
+    this->get_keyword(keyword);
+    return true;
+  } catch (const std::out_of_range& e) {
+    return false;
+  }
+}
+
+TokenType Lexer::get_keyword(std::string keyword) {
+  std::string keyword_lower;
+  for (char c : keyword) {
+    keyword_lower += tolower(c);
+  }
+
+  // do alias substitution
+  auto alias_it = this->keyword_aliases.find(keyword_lower);
+  if (alias_it != this->keyword_aliases.end()) {
+    keyword_lower = alias_it->second;
+  }
+
+  return Lexer::keywords.at(keyword_lower);
 }
 
 void Lexer::scan_token() {
@@ -280,27 +312,63 @@ void Lexer::parse_number() {
 
 void Lexer::parse_identifier() {
   // rockstar identifiers cannot have numbers, spaces, or underscores in them
-  while(this->is_alpha(this->peek())) {
+  while (this->is_alpha(this->peek())) {
     this->advance();
   }
 
   std::string text = this->source.substr(this->start, this->current - this->start);
-  std::string text_lower;
 
-  for (char c : text) {
-    text_lower += tolower(c);
-  }
+  if (!this->is_keyword(text)) {
+    std::string text_lower;
+    for (char c : text) {
+      text_lower += tolower(c);
+    }
 
-  // do alias substitution
-  auto alias_it = this->keyword_aliases.find(text_lower);
-  if (alias_it != this->keyword_aliases.end()) {
-    text_lower = alias_it->second;
-  }
-
-  try {
-    this->add_token(Lexer::keywords.at(text_lower));
-  } catch (const std::out_of_range& e) {
     // did not find any keyword match, log this as an identifier
     this->add_token(TokenType::IDENTIFIER, text_lower);
+  } else {
+    TokenType token = this->get_keyword(text);
+
+    // handle common variables
+    std::vector<TokenType> common_prefixes = {
+      TokenType::A,
+      TokenType::AN,
+      TokenType::THE,
+      TokenType::MY,
+      TokenType::YOUR,
+      TokenType::OUR
+    };
+
+    auto search = std::find(common_prefixes.begin(), common_prefixes.end(), token);
+    if (search != common_prefixes.end()) {
+      // find start of next identifier (should be only whitespace)
+      while (!this->is_alpha(this->peek())) {
+        this->advance();
+      }
+
+      int next_start = this->current;
+
+      // consume next token
+      while (this->is_alpha(this->peek())) {
+        this->advance();
+      }
+
+      std::string next_identifier = this->source.substr(next_start, this->current - next_start);
+      if (this->is_keyword(next_identifier)) {
+        Location loc(next_start, this->current - next_start);
+
+        std::stringstream msg;
+        msg << "Expected identifier after article '" << token;
+        msg << "' for common variable. Found '" << next_identifier;
+        msg << "' instead.";
+
+        Rockstar::error(loc, msg.str());
+      } else {
+        // create common variable token
+        this->add_token(TokenType::IDENTIFIER, text + " " + next_identifier);
+      }
+    } else {
+      this->add_token(token);
+    }
   }
 }

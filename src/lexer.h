@@ -23,6 +23,9 @@ class Lexer {
     bool is_digit(char c);
     bool is_alpha(char c);
     bool is_alphanumeric(char c);
+    bool is_keyword(std::string keyword);
+
+    TokenType get_keyword(std::string keyword);
 
     void scan_token();
     void add_token(TokenType type, TokenData data = std::monostate{});
