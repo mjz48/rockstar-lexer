@@ -212,6 +212,7 @@ void Lexer::scan_token() {
     case '-': this->add_token(TokenType::MINUS); break;
     case '*': this->add_token(TokenType::STAR); break;
     case ',': this->add_token(TokenType::COMMA); break;
+    case '&': this->add_token(TokenType::AMPERSAND); break;
     case '(': this->parse_comment(); break;
     case '"': this->parse_string(); break;
     default:
