@@ -36,6 +36,8 @@ Lexer::AliasMap Lexer::keyword_aliases = {
   std::make_pair("arent", "isnt"),
   std::make_pair("wasnt", "isnt"),
   std::make_pair("werent", "isnt"),
+  std::make_pair("give", "return"),
+  std::make_pair("send", "return"),
 };
 
 Lexer::KeywordMap Lexer::keywords = {
@@ -103,6 +105,7 @@ Lexer::KeywordMap Lexer::keywords = {
   std::make_pair("takes", TokenType::TAKES),
   std::make_pair("taking", TokenType::TAKING),
   std::make_pair("return", TokenType::RETURN),
+  std::make_pair("back", TokenType::BACK),
   std::make_pair("mysterious", TokenType::MYSTERIOUS),
   std::make_pair("null", TokenType::NULL_TOKEN),
   std::make_pair("true", TokenType::TRUE),
@@ -327,48 +330,6 @@ void Lexer::parse_identifier() {
     // did not find any keyword match, log this as an identifier
     this->add_token(TokenType::IDENTIFIER, text_lower);
   } else {
-    TokenType token = this->get_keyword(text);
-
-    // handle common variables
-    std::vector<TokenType> common_prefixes = {
-      TokenType::A,
-      TokenType::AN,
-      TokenType::THE,
-      TokenType::MY,
-      TokenType::YOUR,
-      TokenType::OUR
-    };
-
-    auto search = std::find(common_prefixes.begin(), common_prefixes.end(), token);
-    if (search != common_prefixes.end()) {
-      // find start of next identifier (should be only whitespace)
-      while (!this->is_alpha(this->peek())) {
-        this->advance();
-      }
-
-      int next_start = this->current;
-
-      // consume next token
-      while (this->is_alpha(this->peek())) {
-        this->advance();
-      }
-
-      std::string next_identifier = this->source.substr(next_start, this->current - next_start);
-      if (this->is_keyword(next_identifier)) {
-        Location loc(next_start, this->current - next_start);
-
-        std::stringstream msg;
-        msg << "Expected identifier after article '" << token;
-        msg << "' for common variable. Found '" << next_identifier;
-        msg << "' instead.";
-
-        Rockstar::error(loc, msg.str());
-      } else {
-        // create common variable token
-        this->add_token(TokenType::IDENTIFIER, text + " " + next_identifier);
-      }
-    } else {
-      this->add_token(token);
-    }
+    this->add_token(this->get_keyword(text));
   }
 }
