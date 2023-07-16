@@ -5,6 +5,34 @@
 #include "lexer.h"
 #include "rockstar.h"
 
+Lexer::AliasMap Lexer::keyword_aliases = {
+  //std::make_pair(),
+  std::make_pair("nothing", "null"),
+  std::make_pair("nowhere", "null"),
+  std::make_pair("nobody", "null"),
+  std::make_pair("gone", "null"),
+  std::make_pair("right", "true"),
+  std::make_pair("yes", "true"),
+  std::make_pair("ok", "true"),
+  std::make_pair("wrong", "false"),
+  std::make_pair("no", "false"),
+  std::make_pair("lies", "false"),
+  std::make_pair("empty", ""),
+  std::make_pair("silent", ""),
+  std::make_pair("silence", ""),
+  std::make_pair("push", "rock"),
+  std::make_pair("pop", "roll"),
+  std::make_pair("split", "cut"),
+  std::make_pair("shatter", "cut"),
+  std::make_pair("unite", "join"),
+  std::make_pair("burn", "cast"),
+  // leave out [with -> +] and [without => -] aliases because those
+  // overlap with context sensitive keywords
+  std::make_pair("are", "is"),
+  std::make_pair("was", "is"),
+  std::make_pair("were", "is"),
+};
+
 Lexer::KeywordMap Lexer::keywords = {
   std::make_pair("a", TokenType::A),
   std::make_pair("an", TokenType::AN),
@@ -43,6 +71,7 @@ Lexer::KeywordMap Lexer::keywords = {
   std::make_pair("like", TokenType::LIKE),
   std::make_pair("cut", TokenType::CUT),
   std::make_pair("join", TokenType::JOIN),
+  std::make_pair("cast", TokenType::CAST),
   std::make_pair("build", TokenType::BUILD),
   std::make_pair("knock", TokenType::KNOCK),
   std::make_pair("turn", TokenType::TURN),
@@ -66,10 +95,13 @@ Lexer::KeywordMap Lexer::keywords = {
   std::make_pair("takes", TokenType::TAKES),
   std::make_pair("taking", TokenType::TAKING),
   std::make_pair("return", TokenType::RETURN),
+  std::make_pair("mysterious", TokenType::MYSTERIOUS),
   std::make_pair("null", TokenType::NULL_TOKEN),
   std::make_pair("true", TokenType::TRUE),
   std::make_pair("false", TokenType::FALSE),
   std::make_pair("empty", TokenType::EMPTY),
+  std::make_pair("plus", TokenType::PLUS),
+  std::make_pair("minus", TokenType::MINUS),
 };
 
 Lexer::Lexer(std::string source)
@@ -257,6 +289,12 @@ void Lexer::parse_identifier() {
 
   for (char c : text) {
     text_lower += tolower(c);
+  }
+
+  // do alias substitution
+  auto alias_it = this->keyword_aliases.find(text_lower);
+  if (alias_it != this->keyword_aliases.end()) {
+    text_lower = alias_it->second;
   }
 
   try {

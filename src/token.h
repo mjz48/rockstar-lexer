@@ -41,6 +41,7 @@ enum class TokenType {
   LET, BE, AT,
   ROCK, ROLL, WITH, WITHOUT, LIKE,
   CUT, JOIN,
+  CAST,
   BUILD, KNOCK, TURN, UP, DOWN, AROUND,
   SAY, LISTEN,
   AND, OR, NOR, NOT,

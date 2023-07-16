@@ -37,6 +37,9 @@ class Lexer {
     using KeywordMap = std::map<std::string, TokenType>;
     static KeywordMap keywords;
 
+    using AliasMap = std::map<std::string, std::string>;
+    static AliasMap keyword_aliases;
+
     int start;
     int current;
     std::string source;
